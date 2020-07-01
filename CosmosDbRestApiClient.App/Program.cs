@@ -5,8 +5,8 @@ namespace CosmosDbRestApiClient.App
 {
 	class Program
 	{
-		static string _endpoint = "https://.documents.azure.com/";
-		static string _primaryKey = "==";
+		static string _endpoint = "https://PROVIDE.documents.azure.com/";
+		static string _primaryKey = "PROVIDE";
 		static string _databaseId = "db1";
 		static string _collectionId = "c1";
 		static string _documentId = "1";
@@ -38,6 +38,11 @@ namespace CosmosDbRestApiClient.App
 
 			Console.WriteLine($"Get Document {_documentId} with partition key {_partitionKey}");
 			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result).Result);
+			Console.WriteLine();
+
+			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
+			Console.WriteLine("Query");
+			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.QueryAsync(_databaseId, _collectionId, query).Result).Result);
 			Console.WriteLine();
 
 			Console.WriteLine("Press any key to exit");

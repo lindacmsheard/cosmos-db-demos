@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace CosmosDbRestApiClient
 {
@@ -27,10 +29,11 @@ namespace CosmosDbRestApiClient
 		public const string DATE_HEADER = "x-ms-date";
 		public const string API_VERSION_HEADER = "x-ms-version";
 		public const string AUTHORIZATION_HEADER = "authorization";
+
 		public const string PARTITION_KEY_HEADER = "x-ms-documentdb-partitionkey";
-		public const string CROSS_PARTITION_HEADER = "x-ms-documentdb-query-enablecrosspartition";
+
 		public const string QUERY_HEADER = "x-ms-documentdb-isquery";
-		public const string CONTENT_TYPE_HEADER = "Content-Type";
+		public const string CROSS_PARTITION_HEADER = "x-ms-documentdb-query-enablecrosspartition";
 
 		public const string CONTENT_TYPE_QUERY = "application/query+json";
 
@@ -227,6 +230,28 @@ namespace CosmosDbRestApiClient
 				return string.Empty;
 		}
 
+		/// <summary>
+		/// Prepares HTTP body content that can be used with POST
+		/// </summary>
+		/// <param name="contents">Appropriately serialized HTTP body content</param>
+		/// <param name="mediaType">HTTP media type expected by the URL, like "application/json" or "application/xml"</param>
+		/// <returns></returns>
+		private HttpContent GetHttpContent(string contents, string mediaType)
+		{
+			Encoding encoding = Encoding.UTF8;
+
+			HttpContent result = new StringContent(contents, encoding, mediaType);
+
+			result.Headers.ContentType.CharSet = string.Empty;
+
+			return result;
+		}
+
+		private string FormatQueryForRestApi(string rawQuery)
+		{
+			return JsonConvert.SerializeObject(new { query = rawQuery });
+		}
+
 		private async Task<HttpResponseMessage> ProcessAsync(string authToken, string resourceLink)
 		{
 			var client = new HttpClient();
@@ -268,16 +293,15 @@ namespace CosmosDbRestApiClient
 
 			client.DefaultRequestHeaders.Add(DATE_HEADER, this.UtcDate);
 			client.DefaultRequestHeaders.Add(API_VERSION_HEADER, this.ApiVersion);
-			client.DefaultRequestHeaders.Add(CONTENT_TYPE_HEADER, CONTENT_TYPE_QUERY);
-			client.DefaultRequestHeaders.Add(CROSS_PARTITION_HEADER,"True");
-			client.DefaultRequestHeaders.Add(QUERY_HEADER, "True");
+
+			client.DefaultRequestHeaders.Add(QUERY_HEADER, "true");
+			client.DefaultRequestHeaders.Add(CROSS_PARTITION_HEADER, "true");
 
 			client.DefaultRequestHeaders.Remove(AUTHORIZATION_HEADER);
 			client.DefaultRequestHeaders.Add(AUTHORIZATION_HEADER, authToken);
 
-
 			Uri uri = new Uri(this.CosmosDbEndpointUri, resourceLink);
-			HttpResponseMessage httpResponseMessage = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead);
+			HttpResponseMessage httpResponseMessage = await client.PostAsync(uri, GetHttpContent(FormatQueryForRestApi(query), CONTENT_TYPE_QUERY));
 
 			return httpResponseMessage;
 		}
