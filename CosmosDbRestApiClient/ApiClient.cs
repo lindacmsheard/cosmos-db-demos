@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using pelazem.http;
 
 namespace CosmosDbRestApiClient
 {
@@ -107,6 +108,8 @@ namespace CosmosDbRestApiClient
 				return _baseUri;
 			}
 		}
+
+		private HttpUtil HttpUtil { get; } = new HttpUtil();
 
 		#endregion
 
@@ -254,56 +257,61 @@ namespace CosmosDbRestApiClient
 
 		private async Task<HttpResponseMessage> ProcessAsync(string authToken, string resourceLink)
 		{
-			var client = new HttpClient();
+			CleanRequestHeaders();
 
-			client.DefaultRequestHeaders.Add(DATE_HEADER, this.UtcDate);
-			client.DefaultRequestHeaders.Add(API_VERSION_HEADER, this.ApiVersion);
-
-			client.DefaultRequestHeaders.Remove(AUTHORIZATION_HEADER);
-			client.DefaultRequestHeaders.Add(AUTHORIZATION_HEADER, authToken);
+			this.HttpUtil.AddRequestHeader(DATE_HEADER, this.UtcDate);
+			this.HttpUtil.AddRequestHeader(API_VERSION_HEADER, this.ApiVersion);
+			this.HttpUtil.AddRequestHeader(AUTHORIZATION_HEADER, authToken);
 
 			Uri uri = new Uri(this.CosmosDbEndpointUri, resourceLink);
-			HttpResponseMessage httpResponseMessage = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead);
+			HttpResponseMessage httpResponseMessage = await this.HttpUtil.HttpClient.GetAsync(uri);
 
 			return httpResponseMessage;
 		}
 
 		private async Task<HttpResponseMessage> ProcessPointReadAsync(string authToken, string resourceLink, string partitionKey)
 		{
-			var client = new HttpClient();
+			CleanRequestHeaders();
 
-			client.DefaultRequestHeaders.Add(DATE_HEADER, this.UtcDate);
-			client.DefaultRequestHeaders.Add(API_VERSION_HEADER, this.ApiVersion);
+			this.HttpUtil.AddRequestHeader(DATE_HEADER, this.UtcDate);
+			this.HttpUtil.AddRequestHeader(API_VERSION_HEADER, this.ApiVersion);
+			this.HttpUtil.AddRequestHeader(AUTHORIZATION_HEADER, authToken);
 
 			if (!string.IsNullOrWhiteSpace(partitionKey))
-				client.DefaultRequestHeaders.Add(PARTITION_KEY_HEADER, FormatPartitionKeyForRestApiHeader(partitionKey));
-
-			client.DefaultRequestHeaders.Remove(AUTHORIZATION_HEADER);
-			client.DefaultRequestHeaders.Add(AUTHORIZATION_HEADER, authToken);
+				this.HttpUtil.AddRequestHeader(PARTITION_KEY_HEADER, FormatPartitionKeyForRestApiHeader(partitionKey));
 
 			Uri uri = new Uri(this.CosmosDbEndpointUri, resourceLink);
-			HttpResponseMessage httpResponseMessage = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead);
+			HttpResponseMessage httpResponseMessage = await this.HttpUtil.HttpClient.GetAsync(uri);
 
 			return httpResponseMessage;
 		}
 
 		private async Task<HttpResponseMessage> ProcessQueryAsync(string authToken, string resourceLink, string query)
 		{
-			var client = new HttpClient();
+			CleanRequestHeaders();
 
-			client.DefaultRequestHeaders.Add(DATE_HEADER, this.UtcDate);
-			client.DefaultRequestHeaders.Add(API_VERSION_HEADER, this.ApiVersion);
+			this.HttpUtil.AddRequestHeader(DATE_HEADER, this.UtcDate);
+			this.HttpUtil.AddRequestHeader(API_VERSION_HEADER, this.ApiVersion);
+			this.HttpUtil.AddRequestHeader(AUTHORIZATION_HEADER, authToken);
 
-			client.DefaultRequestHeaders.Add(QUERY_HEADER, "true");
-			client.DefaultRequestHeaders.Add(CROSS_PARTITION_HEADER, "true");
-
-			client.DefaultRequestHeaders.Remove(AUTHORIZATION_HEADER);
-			client.DefaultRequestHeaders.Add(AUTHORIZATION_HEADER, authToken);
+			this.HttpUtil.AddRequestHeader(QUERY_HEADER, "true");
+			this.HttpUtil.AddRequestHeader(CROSS_PARTITION_HEADER, "true");
 
 			Uri uri = new Uri(this.CosmosDbEndpointUri, resourceLink);
-			HttpResponseMessage httpResponseMessage = await client.PostAsync(uri, GetHttpContent(FormatQueryForRestApi(query), CONTENT_TYPE_QUERY));
+			HttpResponseMessage httpResponseMessage = await this.HttpUtil.HttpClient.PostAsync(uri, GetHttpContent(FormatQueryForRestApi(query), CONTENT_TYPE_QUERY));
 
 			return httpResponseMessage;
+		}
+
+		private void CleanRequestHeaders()
+		{
+			this.HttpUtil.RemoveRequestHeader(DATE_HEADER);
+			this.HttpUtil.RemoveRequestHeader(API_VERSION_HEADER);
+			this.HttpUtil.RemoveRequestHeader(AUTHORIZATION_HEADER);
+			this.HttpUtil.RemoveRequestHeader(PARTITION_KEY_HEADER);
+			this.HttpUtil.RemoveRequestHeader(QUERY_HEADER);
+			this.HttpUtil.RemoveRequestHeader(CROSS_PARTITION_HEADER);
+
 		}
 	}
 }
