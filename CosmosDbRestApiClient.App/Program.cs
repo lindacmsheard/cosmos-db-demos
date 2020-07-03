@@ -5,8 +5,8 @@ namespace CosmosDbRestApiClient.App
 {
 	class Program
 	{
-		static string _endpoint = "https://PROVIDE.documents.azure.com/";
-		static string _primaryKey = "PROVIDE";
+		static string _endpoint = "https://pz-cdb-sql.documents.azure.com/";
+		static string _primaryKey = "4W3gQrYhVphGa6QCpEEW9BElw0D3Ls42VVRBaXx1kdfhNB6lH9GWdtXDgAd1vTCkbRoY1gzvATTEM1dngFgWTw==";
 		static string _databaseId = "db1";
 		static string _collectionId = "c1";
 		static string _documentId = "1";
