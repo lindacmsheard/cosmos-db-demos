@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using CosmosDbRestApiClient;
 
 namespace CosmosDbRestApiClient.App
@@ -12,42 +13,40 @@ namespace CosmosDbRestApiClient.App
 		static string _documentId = "1";
 		static string _partitionKey = "green";
 
+		static ApiClient _apiClient = new ApiClient(_endpoint, _primaryKey);
+
 		static void Main(string[] args)
 		{
-			ApiClient apiClient = new ApiClient(_endpoint, _primaryKey);
+			WriteOut("List Databases", _apiClient.ListDatabasesAsync().Result);
 
-			Console.WriteLine("List Databases");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.ListDatabasesAsync().Result).Result);
-			Console.WriteLine();
+			WriteOut($"Get Database {_databaseId}", _apiClient.GetDatabaseAsync(_databaseId).Result);
 
-			Console.WriteLine($"Get Database {_databaseId}");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.GetDatabaseAsync(_databaseId).Result).Result);
-			Console.WriteLine();
+			WriteOut("List Collections", _apiClient.ListCollectionsAsync(_databaseId).Result);
 
-			Console.WriteLine("List Collections");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.ListCollectionsAsync(_databaseId).Result).Result);
-			Console.WriteLine();
+			WriteOut($"Get Collection {_collectionId}", _apiClient.GetCollectionAsync(_databaseId, _collectionId).Result);
 
-			Console.WriteLine($"Get Collection {_collectionId}");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.GetCollectionAsync(_databaseId, _collectionId).Result).Result);
-			Console.WriteLine();
+			WriteOut("List Documents", _apiClient.ListDocumentsAsync(_databaseId, _collectionId).Result);
 
-			Console.WriteLine("List Documents");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.ListDocumentsAsync(_databaseId, _collectionId).Result).Result);
-			Console.WriteLine();
-
-			Console.WriteLine($"Get Document {_documentId} with partition key {_partitionKey}");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result).Result);
-			Console.WriteLine();
+			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", _apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result);
 
 			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
-			Console.WriteLine("Query");
-			Console.WriteLine(apiClient.GetHttpResponseContentAsync(apiClient.QueryAsync(_databaseId, _collectionId, query).Result).Result);
-			Console.WriteLine();
+			WriteOut($"Query: {query}", _apiClient.QueryAsync(_databaseId, _collectionId, query).Result);
 
 			Console.WriteLine("Press any key to exit");
 			Console.ReadKey();
 		}
 
+		static void WriteOut(string title, HttpResponseMessage httpResponseMessage)
+		{
+			Console.WriteLine("--------------------------------------------------");
+			Console.WriteLine(title);
+			Console.WriteLine();
+			Console.WriteLine(_apiClient.GetHttpResponseHeaders(httpResponseMessage, true));
+			Console.WriteLine();
+			Console.WriteLine(_apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
+			Console.WriteLine("--------------------------------------------------");
+			Console.WriteLine();
+			Console.WriteLine();
+		}
 	}
 }

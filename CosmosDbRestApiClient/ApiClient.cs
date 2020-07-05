@@ -212,12 +212,40 @@ namespace CosmosDbRestApiClient
 			return await ProcessQueryAsync(authToken, resourceLink, query);
 		}
 
-		public async Task<string> GetHttpResponseContentAsync(HttpResponseMessage httpResponseMessage)
+		public async Task<string> GetHttpResponseContentAsync(HttpResponseMessage httpResponseMessage, bool asFormattedJson = false)
 		{
-			if (httpResponseMessage == null)
+			if (httpResponseMessage?.Content == null)
 				return string.Empty;
 
-			return await httpResponseMessage.Content.ReadAsStringAsync();
+			string raw = await httpResponseMessage.Content.ReadAsStringAsync();
+
+			if (!asFormattedJson)
+				return raw;
+			else
+			{
+				dynamic parsedJson = JsonConvert.DeserializeObject(raw);
+				return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+			}
+		}
+
+		public string GetHttpResponseHeaders(HttpResponseMessage httpResponseMessage, bool asFormattedJson = false)
+		{
+			if (httpResponseMessage?.Headers == null || httpResponseMessage.Headers.Count() == 0)
+				return string.Empty;
+
+			string result = string.Empty;
+
+			if (!asFormattedJson)
+			{
+				foreach (var header in httpResponseMessage.Headers)
+					result += header.Key + " = " + header.Value + Environment.NewLine;
+			}
+			else
+			{
+				result = JsonConvert.SerializeObject(httpResponseMessage.Headers, Formatting.Indented);
+			}
+
+			return result;
 		}
 
 		/// <summary>
@@ -239,7 +267,7 @@ namespace CosmosDbRestApiClient
 		/// <param name="contents">Appropriately serialized HTTP body content</param>
 		/// <param name="mediaType">HTTP media type expected by the URL, like "application/json" or "application/xml"</param>
 		/// <returns></returns>
-		private HttpContent GetHttpContent(string contents, string mediaType)
+		private HttpContent CreateHttpContent(string contents, string mediaType)
 		{
 			Encoding encoding = Encoding.UTF8;
 
@@ -298,7 +326,7 @@ namespace CosmosDbRestApiClient
 			this.HttpUtil.AddRequestHeader(CROSS_PARTITION_HEADER, "true");
 
 			Uri uri = new Uri(this.CosmosDbEndpointUri, resourceLink);
-			HttpResponseMessage httpResponseMessage = await this.HttpUtil.HttpClient.PostAsync(uri, GetHttpContent(FormatQueryForRestApi(query), CONTENT_TYPE_QUERY));
+			HttpResponseMessage httpResponseMessage = await this.HttpUtil.HttpClient.PostAsync(uri, CreateHttpContent(FormatQueryForRestApi(query), CONTENT_TYPE_QUERY));
 
 			return httpResponseMessage;
 		}
