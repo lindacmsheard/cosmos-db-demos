@@ -36,7 +36,10 @@ namespace CosmosDbRestApiClient
 		public const string QUERY_HEADER = "x-ms-documentdb-isquery";
 		public const string CROSS_PARTITION_HEADER = "x-ms-documentdb-query-enablecrosspartition";
 
+		public const string UPSERT_HEADER = "x-ms-documentdb-is-upsert";
+
 		public const string CONTENT_TYPE_QUERY = "application/query+json";
+		public const string CONTENT_TYPE_DOCUMENT = "application/json";
 
 		#endregion
 
@@ -128,6 +131,8 @@ namespace CosmosDbRestApiClient
 
 		#endregion
 
+		#region Operations
+
 		public async Task<HttpResponseMessage> ListDatabasesAsync()
 		{
 			CosmosDbResourceType resourceType = CosmosDbResourceType.dbs;
@@ -212,6 +217,22 @@ namespace CosmosDbRestApiClient
 			return await ProcessQueryAsync(authToken, resourceLink, query);
 		}
 
+		public async Task<HttpResponseMessage> UpsertAsync(string databaseId, string collectionId, dynamic document, string partitionKey)
+		{
+			CosmosDbResourceType resourceType = CosmosDbResourceType.docs;
+
+			string resourceId = $"{CosmosDbResourceType.dbs}/{databaseId}/{CosmosDbResourceType.colls}/{collectionId}";
+			string resourceLink = $"{resourceId}/{resourceType}";
+
+			string authToken = this.AuthTokenCreator.GenerateAuthToken(HttpMethod.Post, resourceType, resourceId, this.CosmosDbKey, this.UtcDate);
+
+			return await ProcessUpsertAsync(authToken, resourceLink, document, partitionKey);
+		}
+
+		#endregion
+
+		#region Utility
+
 		public async Task<string> GetHttpResponseContentAsync(HttpResponseMessage httpResponseMessage, bool asFormattedJson = false)
 		{
 			if (httpResponseMessage?.Content == null)
@@ -273,6 +294,7 @@ namespace CosmosDbRestApiClient
 
 			HttpContent result = new StringContent(contents, encoding, mediaType);
 
+			// Required by Cosmos DB REST API
 			result.Headers.ContentType.CharSet = string.Empty;
 
 			return result;
@@ -282,6 +304,21 @@ namespace CosmosDbRestApiClient
 		{
 			return JsonConvert.SerializeObject(new { query = rawQuery });
 		}
+
+		private void CleanRequestHeaders()
+		{
+			this.HttpUtil.RemoveRequestHeader(DATE_HEADER);
+			this.HttpUtil.RemoveRequestHeader(API_VERSION_HEADER);
+			this.HttpUtil.RemoveRequestHeader(AUTHORIZATION_HEADER);
+			this.HttpUtil.RemoveRequestHeader(PARTITION_KEY_HEADER);
+			this.HttpUtil.RemoveRequestHeader(QUERY_HEADER);
+			this.HttpUtil.RemoveRequestHeader(CROSS_PARTITION_HEADER);
+
+		}
+
+		#endregion
+
+		#region API Interaction
 
 		private async Task<HttpResponseMessage> ProcessAsync(string authToken, string resourceLink)
 		{
@@ -331,15 +368,27 @@ namespace CosmosDbRestApiClient
 			return httpResponseMessage;
 		}
 
-		private void CleanRequestHeaders()
+		private async Task<HttpResponseMessage> ProcessUpsertAsync(string authToken, string resourceLink, dynamic document, string partitionKey)
 		{
-			this.HttpUtil.RemoveRequestHeader(DATE_HEADER);
-			this.HttpUtil.RemoveRequestHeader(API_VERSION_HEADER);
-			this.HttpUtil.RemoveRequestHeader(AUTHORIZATION_HEADER);
-			this.HttpUtil.RemoveRequestHeader(PARTITION_KEY_HEADER);
-			this.HttpUtil.RemoveRequestHeader(QUERY_HEADER);
-			this.HttpUtil.RemoveRequestHeader(CROSS_PARTITION_HEADER);
+			CleanRequestHeaders();
 
+			this.HttpUtil.AddRequestHeader(DATE_HEADER, this.UtcDate);
+			this.HttpUtil.AddRequestHeader(API_VERSION_HEADER, this.ApiVersion);
+			this.HttpUtil.AddRequestHeader(AUTHORIZATION_HEADER, authToken);
+
+			if (!string.IsNullOrWhiteSpace(partitionKey))
+				this.HttpUtil.AddRequestHeader(PARTITION_KEY_HEADER, FormatPartitionKeyForRestApiHeader(partitionKey));
+
+			this.HttpUtil.AddRequestHeader(UPSERT_HEADER, "true");
+
+			string doc = JsonConvert.SerializeObject(document);
+
+			Uri uri = new Uri(this.CosmosDbEndpointUri, resourceLink);
+			HttpResponseMessage httpResponseMessage = await this.HttpUtil.HttpClient.PostAsync(uri, CreateHttpContent(doc, CONTENT_TYPE_DOCUMENT));
+
+			return httpResponseMessage;
 		}
+
+		#endregion
 	}
 }

@@ -29,6 +29,9 @@ namespace CosmosDbRestApiClient.App
 
 			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", _apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result);
 
+			var newdoc = new { id = "10", foo = "bar", partitionKey = _partitionKey };
+			WriteOut("Upsert", _apiClient.UpsertAsync(_databaseId, _collectionId, newdoc, _partitionKey).Result);
+
 			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
 			WriteOut($"Query: {query}", _apiClient.QueryAsync(_databaseId, _collectionId, query).Result);
 
