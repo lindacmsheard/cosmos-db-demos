@@ -58,6 +58,10 @@ namespace CosmosDbSdkClientApp
 			sdkClientResult = sdkClient.QueryAsync(_databaseId, _collectionId, query).Result;
 			WriteOut($"Query: {query}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
 
+			string sprocName = "getItem";
+			sdkClientResult = sdkClient.ExecSprocAsync(_databaseId, _collectionId, sprocName, _documentId, _partitionKey).Result;
+			WriteOut($"Sproc: {sprocName}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+
 			Console.WriteLine("Press any key to exit");
 			Console.ReadKey();
 		}

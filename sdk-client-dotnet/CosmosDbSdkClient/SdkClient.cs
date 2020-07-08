@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Scripts;
 using Newtonsoft.Json;
 
 namespace CosmosDbSdkClient
@@ -224,6 +225,22 @@ namespace CosmosDbSdkClient
 			ItemResponse<object> response = await container.UpsertItemAsync<object>(document, new PartitionKey(partitionKey));
 
 			result.Content = response.Resource;
+			result.RequestInfo.RequestCharge = response.RequestCharge;
+
+			return result;
+		}
+
+		public async Task<SdkClientResult> ExecSprocAsync(string databaseId, string collectionId, string sprocName, string documentId, string partitionKey)
+		{
+			SdkClientResult result = new SdkClientResult();
+
+			// Local proxy objects
+			Database database = this.CosmosClient.GetDatabase(databaseId);
+			Container container = database.GetContainer(collectionId);
+
+			StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string>(sprocName, new PartitionKey(partitionKey), new[] { documentId });
+
+			result.Content = JsonConvert.DeserializeObject(response.Resource);
 			result.RequestInfo.RequestCharge = response.RequestCharge;
 
 			return result;
