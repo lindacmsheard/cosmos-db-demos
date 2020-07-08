@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.Design;
 using System.Net.Http;
 using CosmosDbRestApiClient;
 
@@ -6,47 +7,71 @@ namespace CosmosDbRestApiClient.App
 {
 	class Program
 	{
-		static string _endpoint = "https://PROVIDE-SQL-ACCOUNT-NAME.documents.azure.com/";
-		static string _primaryKey = "PROVIDE";
+		const string COSMOS_DB_ENDPOINT = "Cosmos-DB-Endpoint";
+		const string COSMOS_DB_KEY = "Cosmos-DB-Key";
+
 		static string _databaseId = "db1";
 		static string _collectionId = "c1";
 		static string _documentId = "1";
 		static string _partitionKey = "green";
 
-		static ApiClient _apiClient = new ApiClient(_endpoint, _primaryKey);
+		private static void Initialize()
+		{
+			Environment.SetEnvironmentVariable(COSMOS_DB_ENDPOINT, "PROVIDE", EnvironmentVariableTarget.Process);
+			Environment.SetEnvironmentVariable(COSMOS_DB_KEY, "PROVIDE", EnvironmentVariableTarget.Process);
+		}
 
 		static void Main(string[] args)
 		{
-			WriteOut("List Databases", _apiClient.ListDatabasesAsync().Result);
+			// Demo environment
+			Initialize();
 
-			WriteOut($"Get Database {_databaseId}", _apiClient.GetDatabaseAsync(_databaseId).Result);
+			// Get these values from environment vars - could do this in an Azure App to retrieve from App Settings
+			string endpoint = Environment.GetEnvironmentVariable(COSMOS_DB_ENDPOINT);
+			string primaryKey = Environment.GetEnvironmentVariable(COSMOS_DB_KEY);
 
-			WriteOut("List Collections", _apiClient.ListCollectionsAsync(_databaseId).Result);
+			ApiClient apiClient = new ApiClient(endpoint, primaryKey);
 
-			WriteOut($"Get Collection {_collectionId}", _apiClient.GetCollectionAsync(_databaseId, _collectionId).Result);
+			HttpResponseMessage httpResponseMessage;
 
-			WriteOut("List Documents", _apiClient.ListDocumentsAsync(_databaseId, _collectionId).Result);
+			httpResponseMessage = apiClient.ListDatabasesAsync().Result;
+			WriteOut("List Databases", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
-			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", _apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result);
+			httpResponseMessage = apiClient.GetDatabaseAsync(_databaseId).Result;
+			WriteOut($"Get Database {_databaseId}", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
+
+			httpResponseMessage = apiClient.ListCollectionsAsync(_databaseId).Result;
+			WriteOut("List Collections", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
+
+			httpResponseMessage = apiClient.GetCollectionAsync(_databaseId, _collectionId).Result;
+			WriteOut($"Get Collection {_collectionId}", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
+
+			httpResponseMessage = apiClient.ListDocumentsAsync(_databaseId, _collectionId).Result;
+			WriteOut("List Documents", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
+
+			httpResponseMessage = apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result;
+			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
 			var newdoc = new { id = "10", foo = "bar", partitionKey = _partitionKey };
-			WriteOut("Upsert", _apiClient.UpsertAsync(_databaseId, _collectionId, newdoc, _partitionKey).Result);
+			httpResponseMessage = apiClient.UpsertAsync(_databaseId, _collectionId, newdoc, _partitionKey).Result;
+			WriteOut("Upsert", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
 			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
-			WriteOut($"Query: {query}", _apiClient.QueryAsync(_databaseId, _collectionId, query).Result);
+			httpResponseMessage = apiClient.QueryAsync(_databaseId, _collectionId, query).Result;
+			WriteOut($"Query: {query}", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
 			Console.WriteLine("Press any key to exit");
 			Console.ReadKey();
 		}
 
-		static void WriteOut(string title, HttpResponseMessage httpResponseMessage)
+		static void WriteOut(string title, string headers, string content)
 		{
 			Console.WriteLine("--------------------------------------------------");
 			Console.WriteLine(title);
 			Console.WriteLine();
-			Console.WriteLine(_apiClient.GetHttpResponseHeaders(httpResponseMessage, true));
+			Console.WriteLine(headers);
 			Console.WriteLine();
-			Console.WriteLine(_apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
+			Console.WriteLine(content);
 			Console.WriteLine("--------------------------------------------------");
 			Console.WriteLine();
 			Console.WriteLine();
