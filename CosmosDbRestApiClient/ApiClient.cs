@@ -245,6 +245,8 @@ namespace CosmosDbRestApiClient
 			else
 			{
 				dynamic parsedJson = JsonConvert.DeserializeObject(raw);
+				object myObject = new object();
+				string myDocument = JsonConvert.SerializeObject(myObject, Formatting.Indented);
 				return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
 			}
 		}
