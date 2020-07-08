@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -244,10 +243,8 @@ namespace CosmosDbRestApiClient
 				return raw;
 			else
 			{
-				dynamic parsedJson = JsonConvert.DeserializeObject(raw);
-				object myObject = new object();
-				string myDocument = JsonConvert.SerializeObject(myObject, Formatting.Indented);
-				return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+				dynamic parsed = JsonConvert.DeserializeObject(raw);
+				return AsJson(parsed, true);
 			}
 		}
 
@@ -264,11 +261,14 @@ namespace CosmosDbRestApiClient
 					result += header.Key + " = " + header.Value + Environment.NewLine;
 			}
 			else
-			{
-				result = JsonConvert.SerializeObject(httpResponseMessage.Headers, Formatting.Indented);
-			}
+				result = AsJson(httpResponseMessage.Headers, true);
 
 			return result;
+		}
+
+		public string AsJson(object serializeMe, bool asFormattedJson = false)
+		{
+			return JsonConvert.SerializeObject(serializeMe, (asFormattedJson ? Formatting.Indented : Formatting.None));
 		}
 
 		/// <summary>

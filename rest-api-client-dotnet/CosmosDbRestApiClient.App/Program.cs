@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel.Design;
 using System.Net.Http;
 using CosmosDbRestApiClient;
 
@@ -7,8 +6,8 @@ namespace CosmosDbRestApiClient.App
 {
 	class Program
 	{
-		const string COSMOS_DB_ENDPOINT = "Cosmos-DB-Endpoint";
-		const string COSMOS_DB_KEY = "Cosmos-DB-Key";
+		const string COSMOS_DB_ENDPOINT = "CosmosDBEndpoint";
+		const string COSMOS_DB_KEY = "CosmosDBKey";
 
 		static string _databaseId = "db1";
 		static string _collectionId = "c1";
