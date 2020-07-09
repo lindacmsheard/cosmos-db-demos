@@ -10,6 +10,11 @@ namespace CosmosDbSdkClient
 	{
 		public RequestInfo RequestInfo { get; set; } = new RequestInfo();
 
-		public object Content { get; set; }
+		public virtual object Content { get; set; }
+	}
+
+	public class SdkClientResult<T> : SdkClientResult
+	{
+		public new T Content { get; set; }
 	}
 }

@@ -162,15 +162,15 @@ namespace CosmosDbSdkClient
 			return result;
 		}
 
-		public async Task<SdkClientResult> GetDocumentAsync(string databaseId, string collectionId, string documentId, string partitionKey)
+		public async Task<SdkClientResult<T>> GetDocumentAsync<T>(string databaseId, string collectionId, string documentId, string partitionKey)
 		{
-			SdkClientResult result = new SdkClientResult();
+			SdkClientResult<T> result = new SdkClientResult<T>();
 
 			// Local proxy objects
 			Database database = this.CosmosClient.GetDatabase(databaseId);
 			Container container = database.GetContainer(collectionId);
 
-			ItemResponse<object> response = await container.ReadItemAsync<object>(documentId, new PartitionKey(partitionKey));
+			ItemResponse<T> response = await container.ReadItemAsync<T>(documentId, new PartitionKey(partitionKey));
 
 			result.Content = response.Resource;
 			result.RequestInfo.RequestCharge = response.RequestCharge;
@@ -178,9 +178,9 @@ namespace CosmosDbSdkClient
 			return result;
 		}
 
-		public async Task<SdkClientResult> QueryAsync(string databaseId, string collectionId, string query)
+		public async Task<SdkClientResult<List<T>>> QueryAsync<T>(string databaseId, string collectionId, string query)
 		{
-			SdkClientResult result = new SdkClientResult();
+			SdkClientResult<List<T>> result = new SdkClientResult<List<T>>();
 
 			QueryDefinition queryDefinition = new QueryDefinition(query);
 
@@ -195,13 +195,13 @@ namespace CosmosDbSdkClient
 			Database database = this.CosmosClient.GetDatabase(databaseId);
 			Container container = database.GetContainer(collectionId);
 
-			List<object> documents = new List<object>();
+			List<T> documents = new List<T>();
 
-			using (var resultsIterator = container.GetItemQueryIterator<object>(queryDefinition, requestOptions: queryRequestOptions))
+			using (var resultsIterator = container.GetItemQueryIterator<T>(queryDefinition, requestOptions: queryRequestOptions))
 			{
 				while (resultsIterator.HasMoreResults)
 				{
-					FeedResponse<object> currentResultSet = await resultsIterator.ReadNextAsync();
+					FeedResponse<T> currentResultSet = await resultsIterator.ReadNextAsync();
 
 					documents.AddRange(currentResultSet.Resource);
 					result.RequestInfo.RequestCharge += currentResultSet.RequestCharge;
@@ -211,18 +211,17 @@ namespace CosmosDbSdkClient
 			result.Content = documents;
 
 			return result;
-
 		}
 
-		public async Task<SdkClientResult> UpsertAsync(string databaseId, string collectionId, dynamic document, string partitionKey)
+		public async Task<SdkClientResult<T>> UpsertAsync<T>(string databaseId, string collectionId, T item, string partitionKey)
 		{
-			SdkClientResult result = new SdkClientResult();
+			SdkClientResult<T> result = new SdkClientResult<T>();
 
 			// Local proxy objects
 			Database database = this.CosmosClient.GetDatabase(databaseId);
 			Container container = database.GetContainer(collectionId);
 
-			ItemResponse<object> response = await container.UpsertItemAsync<object>(document, new PartitionKey(partitionKey));
+			ItemResponse<T> response = await container.UpsertItemAsync<T>(item, new PartitionKey(partitionKey));
 
 			result.Content = response.Resource;
 			result.RequestInfo.RequestCharge = response.RequestCharge;
@@ -230,18 +229,28 @@ namespace CosmosDbSdkClient
 			return result;
 		}
 
-		public async Task<SdkClientResult> ExecSprocAsync(string databaseId, string collectionId, string sprocName, string documentId, string partitionKey)
+		public async Task<SdkClientResult<T>> ExecSprocAsync<T>(string databaseId, string collectionId, string sprocName, string documentId, string partitionKey)
 		{
-			SdkClientResult result = new SdkClientResult();
+			SdkClientResult<T> result = new SdkClientResult<T>();
 
 			// Local proxy objects
 			Database database = this.CosmosClient.GetDatabase(databaseId);
 			Container container = database.GetContainer(collectionId);
 
-			StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string>(sprocName, new PartitionKey(partitionKey), new[] { documentId });
+			// Enable sproc logging which we set to the result below - this is not enabled by default
+			StoredProcedureRequestOptions sprocRequestOptions = new StoredProcedureRequestOptions() { EnableScriptLogging = true };
 
-			result.Content = JsonConvert.DeserializeObject(response.Resource);
+			StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string>
+			(
+				sprocName,
+				new PartitionKey(partitionKey),
+				new[] { documentId },
+				sprocRequestOptions
+			);
+			
+			result.Content = JsonConvert.DeserializeObject<T>(response.Resource);
 			result.RequestInfo.RequestCharge = response.RequestCharge;
+			result.RequestInfo.Logging = response.ScriptLog;
 
 			return result;
 		}

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using CosmosDbSdkClient;
 
 namespace CosmosDbSdkClientApp
@@ -30,37 +32,35 @@ namespace CosmosDbSdkClientApp
 
 			SdkClient sdkClient = new SdkClient(endpoint, primaryKey);
 
-			SdkClientResult sdkClientResult;
+			SdkClientResult listDatabasesResult = sdkClient.ListDatabasesAsync().Result;
+			WriteOut("List Databases", listDatabasesResult.RequestInfo.AsJson(true), listDatabasesResult.Content.AsJson(true));
 
-			sdkClientResult = sdkClient.ListDatabasesAsync().Result;
-			WriteOut("List Databases", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult getDatabaseResult = sdkClient.GetDatabaseAsync(_databaseId).Result;
+			WriteOut($"Get Database {_databaseId}", getDatabaseResult.RequestInfo.AsJson(true), getDatabaseResult.Content.AsJson(true));
 
-			sdkClientResult = sdkClient.GetDatabaseAsync(_databaseId).Result;
-			WriteOut($"Get Database {_databaseId}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult listCollectionsResult = sdkClient.ListCollectionsAsync(_databaseId).Result;
+			WriteOut("List Collections", listCollectionsResult.RequestInfo.AsJson(true), listCollectionsResult.Content.AsJson(true));
 
-			sdkClientResult = sdkClient.ListCollectionsAsync(_databaseId).Result;
-			WriteOut("List Collections", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult getCollectionResult = sdkClient.GetCollectionAsync(_databaseId, _collectionId).Result;
+			WriteOut($"Get Collection {_collectionId}", getCollectionResult.RequestInfo.AsJson(true), getCollectionResult.Content.AsJson(true));
 
-			sdkClientResult = sdkClient.GetCollectionAsync(_databaseId, _collectionId).Result;
-			WriteOut($"Get Collection {_collectionId}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult listDocumentsResult = sdkClient.ListDocumentsAsync(_databaseId, _collectionId).Result;
+			WriteOut("List Documents", listDocumentsResult.RequestInfo.AsJson(true), listDocumentsResult.Content.AsJson(true));
 
-			sdkClientResult = sdkClient.ListDocumentsAsync(_databaseId, _collectionId).Result;
-			WriteOut("List Documents", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult<SampleItem> getDocumentResult = sdkClient.GetDocumentAsync<SampleItem>(_databaseId, _collectionId, _documentId, _partitionKey).Result;
+			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", getDocumentResult.RequestInfo.AsJson(true), getDocumentResult.Content.AsJson(true));
 
-			sdkClientResult = sdkClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result;
-			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
-
-			var newdoc = new { id = "10", foo = "baz", partitionKey = _partitionKey };
-			sdkClientResult = sdkClient.UpsertAsync(_databaseId, _collectionId, newdoc, _partitionKey).Result;
-			WriteOut("Upsert", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SampleItem item = new SampleItem { Id = "10", Foo = "bar", PartitionKey = _partitionKey, Amount = 11.22 };
+			SdkClientResult<SampleItem> upsertResult = sdkClient.UpsertAsync<SampleItem>(_databaseId, _collectionId, item, _partitionKey).Result;
+			WriteOut("Upsert", upsertResult.RequestInfo.AsJson(true), upsertResult.Content.AsJson(true));
 
 			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
-			sdkClientResult = sdkClient.QueryAsync(_databaseId, _collectionId, query).Result;
-			WriteOut($"Query: {query}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult<List<SampleItem>> queryResult = sdkClient.QueryAsync<SampleItem>(_databaseId, _collectionId, query).Result;
+			WriteOut($"Query: {query}", queryResult.RequestInfo.AsJson(true), queryResult.Content.AsJson(true));
 
 			string sprocName = "getItem";
-			sdkClientResult = sdkClient.ExecSprocAsync(_databaseId, _collectionId, sprocName, _documentId, _partitionKey).Result;
-			WriteOut($"Sproc: {sprocName}", sdkClientResult.RequestInfo.AsJson(true), sdkClientResult.Content.AsJson(true));
+			SdkClientResult<SampleItem> sprocResult = sdkClient.ExecSprocAsync<SampleItem>(_databaseId, _collectionId, sprocName, _documentId, _partitionKey).Result;
+			WriteOut($"Sproc: {sprocName}", sprocResult.RequestInfo.AsJson(true), sprocResult.Content.AsJson(true));
 
 			Console.WriteLine("Press any key to exit");
 			Console.ReadKey();

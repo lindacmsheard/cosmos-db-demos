@@ -2,7 +2,7 @@ function getItem(id) {
     var collection = getContext().getCollection();
 
     var query =  {query:
-        "SELECT c.id, c.partitionKey, c.foo, c.amount, udf.upcharge(c.amount) AS retailPrice FROM c WHERE c.id = @id",
+        "SELECT c.id, c.partitionKey, c.foo, c.amount, udf.upcharge(c.amount) AS retailPrice, c._ts FROM c WHERE c.id = @id",
         parameters: [{name: "@id", value: id}]};
 
     // Query documents and take 1st item.
@@ -17,7 +17,7 @@ function getItem(id) {
         if (!feed || !feed.length) {
             console.log(feed.length);
             var response = getContext().getResponse();
-            response.setBody('no docs found');
+            response.setBody('No docs found! Sad trombone.');
         }
         else {
             var response = getContext().getResponse();
@@ -26,7 +26,7 @@ function getItem(id) {
         }
     });
 
-    if (!isAccepted) throw new Error('The query was not accepted by the server.');
+    if (!isAccepted) throw new Error('The query was not accepted by the server. Too bad for you!');
 }
 
 function upcharge(base_amount){
