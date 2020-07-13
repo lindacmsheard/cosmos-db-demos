@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Scripts;
+using Microsoft.Azure.Cosmos.Fluent;
 using Newtonsoft.Json;
 
 namespace CosmosDbSdkClient
