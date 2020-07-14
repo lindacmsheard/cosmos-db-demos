@@ -12,7 +12,7 @@ namespace CosmosDbSdkClientApp
 
 		static string _databaseId = "db1";
 		static string _collectionId = "c1";
-		static string _documentId = "1";
+		static string _documentId = "30";
 		static string _partitionKey = "green";
 
 		private static void Initialize()
@@ -50,8 +50,8 @@ namespace CosmosDbSdkClientApp
 			SdkClientResult<SampleItem> getDocumentResult = sdkClient.GetDocumentAsync<SampleItem>(_databaseId, _collectionId, _documentId, _partitionKey).Result;
 			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", getDocumentResult.RequestInfo.AsJson(true), getDocumentResult.Content.AsJson(true));
 
-			SampleItem item = new SampleItem { Id = "10", Foo = "bar", PartitionKey = _partitionKey, Amount = 11.22 };
-			SdkClientResult<SampleItem> upsertResult = sdkClient.UpsertAsync<SampleItem>(_databaseId, _collectionId, item, _partitionKey).Result;
+			SampleItem newDoc = GetNewDocument();
+			SdkClientResult<SampleItem> upsertResult = sdkClient.UpsertAsync<SampleItem>(_databaseId, _collectionId, newDoc, _partitionKey).Result;
 			WriteOut("Upsert", upsertResult.RequestInfo.AsJson(true), upsertResult.Content.AsJson(true));
 
 			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
@@ -77,6 +77,17 @@ namespace CosmosDbSdkClientApp
 			Console.WriteLine("--------------------------------------------------");
 			Console.WriteLine();
 			Console.WriteLine();
+		}
+
+		static SampleItem GetNewDocument()
+		{
+			return new SampleItem
+			{
+				Id = _documentId,
+				Foo = Guid.NewGuid().ToString(),
+				PartitionKey = _partitionKey,
+				Amount = 1.11
+			};
 		}
 	}
 }

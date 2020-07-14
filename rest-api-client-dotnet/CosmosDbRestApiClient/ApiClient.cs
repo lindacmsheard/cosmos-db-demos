@@ -192,7 +192,7 @@ namespace CosmosDbRestApiClient
 			return await ProcessAsync(authToken, resourceLink);
 		}
 
-		public async Task<HttpResponseMessage> GetDocumentAsync(string databaseId, string collectionId, string documentId, object partitionKey)
+		public async Task<HttpResponseMessage> GetDocumentAsync(string databaseId, string collectionId, string documentId, string partitionKey)
 		{
 			CosmosDbResourceType resourceType = CosmosDbResourceType.docs;
 
@@ -216,7 +216,7 @@ namespace CosmosDbRestApiClient
 			return await ProcessQueryAsync(authToken, resourceLink, query);
 		}
 
-		public async Task<HttpResponseMessage> UpsertAsync(string databaseId, string collectionId, dynamic document, object partitionKey)
+		public async Task<HttpResponseMessage> UpsertAsync(string databaseId, string collectionId, dynamic document, string partitionKey)
 		{
 			CosmosDbResourceType resourceType = CosmosDbResourceType.docs;
 
@@ -276,17 +276,17 @@ namespace CosmosDbRestApiClient
 		/// </summary>
 		/// <param name="partitionKey"></param>
 		/// <returns></returns>
-		private string FormatPartitionKeyForRestApiHeader(object partitionKey)
+		private string FormatPartitionKeyForRestApiHeader(string partitionKey)
 		{
-			if (partitionKey is string)
-				return $"[\"{partitionKey}\"]";
-			else
-				return $"[{partitionKey}]";
-
-			//if (!string.IsNullOrWhiteSpace(partitionKey))
+			//if (partitionKey is string)
 			//	return $"[\"{partitionKey}\"]";
 			//else
-			//	return string.Empty;
+			//	return $"[{partitionKey}]";
+
+			if (!string.IsNullOrWhiteSpace(partitionKey))
+				return $"[\"{partitionKey}\"]";
+			else
+				return string.Empty;
 		}
 
 		/// <summary>
@@ -341,7 +341,7 @@ namespace CosmosDbRestApiClient
 			return httpResponseMessage;
 		}
 
-		private async Task<HttpResponseMessage> ProcessPointReadAsync(string authToken, string resourceLink, object partitionKey)
+		private async Task<HttpResponseMessage> ProcessPointReadAsync(string authToken, string resourceLink, string partitionKey)
 		{
 			CleanRequestHeaders();
 
@@ -374,7 +374,7 @@ namespace CosmosDbRestApiClient
 			return httpResponseMessage;
 		}
 
-		private async Task<HttpResponseMessage> ProcessUpsertAsync(string authToken, string resourceLink, dynamic document, object partitionKey)
+		private async Task<HttpResponseMessage> ProcessUpsertAsync(string authToken, string resourceLink, dynamic document, string partitionKey)
 		{
 			CleanRequestHeaders();
 
