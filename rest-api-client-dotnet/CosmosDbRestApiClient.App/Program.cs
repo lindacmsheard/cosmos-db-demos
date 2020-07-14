@@ -9,13 +9,15 @@ namespace CosmosDbRestApiClient.App
 		const string COSMOS_DB_ENDPOINT = "CosmosDBEndpoint";
 		const string COSMOS_DB_KEY = "CosmosDBKey";
 
-		static string _databaseId = "db1";
-		static string _collectionId = "c1";
-		static string _documentId = "1";
-		static string _partitionKey = "green";
+		static string _databaseId = "RetailDemo";
+		static string _collectionId = "WebsiteData";
+		static string _documentId = "6906c9c9-4f76-46ff-8a35-35535656a920";
+		static string _partitionKeyFieldName = "CartID";
+		static int _partitionKey = 8744;
 
 		private static void Initialize()
 		{
+			// We set values to environment variables to simulate a production environment, e.g. App Settings configuration
 			Environment.SetEnvironmentVariable(COSMOS_DB_ENDPOINT, "PROVIDE", EnvironmentVariableTarget.Process);
 			Environment.SetEnvironmentVariable(COSMOS_DB_KEY, "PROVIDE", EnvironmentVariableTarget.Process);
 		}
@@ -51,11 +53,11 @@ namespace CosmosDbRestApiClient.App
 			httpResponseMessage = apiClient.GetDocumentAsync(_databaseId, _collectionId, _documentId, _partitionKey).Result;
 			WriteOut($"Get Document {_documentId} with partition key {_partitionKey}", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
-			var newdoc = new { id = "10", foo = "bar", partitionKey = _partitionKey };
+			var newdoc = GetNewDocument();
 			httpResponseMessage = apiClient.UpsertAsync(_databaseId, _collectionId, newdoc, _partitionKey).Result;
 			WriteOut("Upsert", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
-			string query = $"SELECT * FROM c WHERE c.partitionKey = \"{_partitionKey}\"";
+			string query = $"SELECT * FROM c WHERE c.{_partitionKeyFieldName} = {_partitionKey}";
 			httpResponseMessage = apiClient.QueryAsync(_databaseId, _collectionId, query).Result;
 			WriteOut($"Query: {query}", apiClient.GetHttpResponseHeaders(httpResponseMessage, true), apiClient.GetHttpResponseContentAsync(httpResponseMessage, true).Result);
 
@@ -74,6 +76,26 @@ namespace CosmosDbRestApiClient.App
 			Console.WriteLine("--------------------------------------------------");
 			Console.WriteLine();
 			Console.WriteLine();
+		}
+		
+		static dynamic GetNewDocument()
+		{
+			var newdoc = new
+			{
+				CartID = _partitionKey,
+				Action = "Viewed",
+				Item = "Flux Capacitor",
+				Price = 50,
+				UserName = "Dr Emmett Brown",
+				Country = "United States of America",
+				Address = "4 Westmoreland Place, Pasadena CA 91101, United States of America",
+				EventDate = "2020-07-14T00:00:00",
+				Year = 2020,
+				Latitude = 34.151654,
+				Longitude = -118.160881
+			};
+
+			return newdoc;
 		}
 	}
 }
