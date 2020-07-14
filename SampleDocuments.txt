@@ -1,0 +1,28 @@
+[
+    {
+        "id": "1",
+        "partitionKey": "green",
+        "amount": 1.24
+    },
+    {
+        "id": "2",
+        "partitionKey": "green",
+        "amount": 2.34
+    },
+    {
+        "id": "3",
+        "partitionKey": "blue",
+        "amount": 3.45
+    },
+    {
+        "id": "10",
+        "partitionKey": "green",
+        "foo": "bam",
+        "amount": 11.22
+    },
+    {
+        "id": "20",
+        "foo": "bar",
+        "partitionKey": "green"
+    }
+]
